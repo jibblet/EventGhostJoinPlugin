@@ -2,7 +2,7 @@ import eg
 import urllib
 import requests
 import wx
-import asyncioimport, aiohttp
+import asyncio, aiohttp, asyncio-wx
 
 
 ##TODO##
@@ -131,18 +131,17 @@ class SendNotification(eg.ActionBase):
     name = "Send Notification"
     description = "Sends a notification to selected Android devices."
 
-    def __call__(self, title, text, selected_device_names):
+    async def __call__(self, title, text, selected_device_names):
         api_key = self.plugin.api_key
-        url = "https://joinjoaomgcd.appspot.com/_ah/api/messaging/v1/sendPush"
-        
         for device_name in selected_device_names:
             device_id = self.plugin.devices.get(device_name)
-            if device_id:
-                url = url+"?apikey="+api_key+"&text="+urllib.quote(text)+"&title="+urllib.quote(title)+"&deviceId="+device_id
+        if device_id:
+            async with aiohttp.ClientSession() as session:
+                url = f"https://joinjoaomgcd.appspot.com/_ah/api/messaging/v1/sendPush?apikey={api_key}&text={urllib.quote(text)}&title={urllib.quote(title)}&deviceId={device_id}"
                 try:
-                    response = requests.post(url)
+                    response = await session.post(url)
                     response.raise_for_status()
-                    print(url)
+                    print(url) #DEBUGGING PURPOSES ONLY#############################################
                     print "Notification sent successfully to device %s" % device_name
                 except requests.RequestException as e:
                     print "Failed to send notification to device %s: %s" % (device_name, str(e))
