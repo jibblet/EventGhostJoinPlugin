@@ -2,7 +2,6 @@ import eg
 import urllib
 import requests
 import wx
-import asyncioimport, aiohttp
 
 
 ##TODO##
@@ -40,6 +39,8 @@ eg.RegisterPlugin(
 class JoinWebAPI(eg.PluginBase):
     def __init__(self):
         self.AddAction(SendNotification)
+        self.api_key=""
+        self.devices={}
 
     def Configure(self, api_key="", devices=None):
         if devices is None:
@@ -70,10 +71,20 @@ class JoinWebAPI(eg.PluginBase):
         panel.sizer.Add(settingsBox, 0, wx.EXPAND)
 
         while panel.Affirmed():
-            panel.SetResult(
-                apiKeyCtrl.GetValue(),
-                devices
-            )
+            self.devices = devices  # Use existing device list
+            self.api_key = api_key
+            if not devices:
+                # Handle empty devices (e.g., display a warning message)
+                wx.MessageBox("Please add at least one device.", "Error", wx.ICON_ERROR)
+                return
+            
+            api_key = apiKeyCtrl.GetValue()
+
+            # Save configuration
+            #eg.SetPluginSetting("api_key", api_key)
+            #eg.SetPluginSetting("devices", devices)
+
+            panel.SetResult(api_key, devices)
 
     def __start__(self, api_key, devices):
         self.api_key = api_key
