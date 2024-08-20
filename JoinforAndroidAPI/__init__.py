@@ -14,7 +14,7 @@ import wx
 eg.RegisterPlugin(
     name=u"Join for Android API",
     author=u"jconic.com",
-    version=u"0.2",
+    version=u"0.4",
     kind=u"other",
     description=u"This plugin exposes the Join for Android API to EventGhost.",
     icon=(
@@ -39,6 +39,7 @@ eg.RegisterPlugin(
 class JoinWebAPI(eg.PluginBase):
     def __init__(self):
         self.AddAction(SendNotification)
+        self.AddAction(SendSystemClipboard)
         self.api_key=""
         self.devices={}
 
@@ -176,3 +177,46 @@ class SendNotification(eg.ActionBase):
         while panel.Affirmed():
             selected = [name for i, name in enumerate(self.plugin.devices.keys()) if deviceChoices.IsChecked(i)]
             panel.SetResult(titleCtrl.GetValue(), textCtrl.GetValue(), selected)
+            
+            
+class SendSystemClipboard(eg.ActionBase):
+    name = "Send Clipboard"
+    description = "Sends what is currently in the system clipboard to a device of your choosing"
+    
+    def __call__(self, selected_device_names):
+        api_key = self.plugin.api_key
+        sysclipboard = eg.WinApi.Clipboard.GetClipboardText()
+        url = "https://joinjoaomgcd.appspot.com/_ah/api/messaging/v1/sendPush"
+        
+        for device_name in selected_device_names:
+            device_id = self.plugin.devices.get(device_name)
+            if device_id:
+                url = url+"?apikey="+api_key+"&text="+urllib.quote(sysclipboard)+"&title=clipboard&deviceId="+device_id
+                try:
+                    response = requests.post(url)
+                    response.raise_for_status()
+                    print(url)
+                    print "Clipboard sent successfully to device %s" % device_name
+                except requests.RequestException as e:
+                    print "Failed to send clipboard to device %s: %s" % (device_name, str(e))
+
+    def Configure(self, selected_device_names=None):
+        panel = eg.ConfigPanel()
+        
+        #Functionality to change command temporarily removed
+        #titleCtrl = panel.TextCtrl(title)
+        
+        deviceChoices = wx.CheckListBox(panel, -1, choices=list(self.plugin.devices.keys()))
+        if selected_device_names:
+            for i, device_name in enumerate(self.plugin.devices.keys()):
+                if device_name in selected_device_names:
+                    deviceChoices.Check(i, True)
+        
+        #see above
+        #panel.AddLine("Title:", titleCtrl)
+
+        panel.AddLine("Select devices:", deviceChoices)
+        
+        while panel.Affirmed():
+            selected = [name for i, name in enumerate(self.plugin.devices.keys()) if deviceChoices.IsChecked(i)]
+            panel.SetResult(selected)
